@@ -1,32 +1,58 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Git branch to build')
+    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${params.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/your-org/your-repo.git',
+                        credentialsId: 'your-credentials-id'
+                    ]]
+                ])
+            }
+        }
+
         stage('Check or Create Bucket') {
             steps {
                 script {
                     def bucketName = "dtcc_pov"
-                    def region = "us-east-1"   // change if needed
+                    def region = "us-east-1"
                     def stackName = "dtcc-pov-stack"
-                    def templateFile = "cloudformation\\s3-bucket.yml"
+                    def templateFile = "cloudformation/s3-bucket.yml"
 
-                    // Check if bucket exists (Windows uses bat instead of sh)
-                    def checkBucket = bat(
-                        script: "aws s3api head-bucket --bucket ${bucketName} 2>nul || echo NotFound",
-                        returnStdout: true
-                    ).trim()
-
-                    if (checkBucket.contains("NotFound")) {
-                        echo "Bucket does not exist. Deploying CloudFormation stack..."
-                        bat """
-                        aws cloudformation deploy ^
-                            --stack-name ${stackName} ^
-                            --template-file ${templateFile} ^
-                            --capabilities CAPABILITY_NAMED_IAM ^
-                            --region ${region}
-                        """
+                    if (isUnix()) {
+                        def checkBucket = sh(script: "aws s3api head-bucket --bucket ${bucketName} 2>&1 || true", returnStdout: true).trim()
+                        if (checkBucket.contains("Not Found") || checkBucket.contains("404")) {
+                            sh """
+                            aws cloudformation deploy \
+                                --stack-name ${stackName} \
+                                --template-file ${templateFile} \
+                                --capabilities CAPABILITY_NAMED_IAM \
+                                --region ${region}
+                            """
+                        } else {
+                            echo "Bucket ${bucketName} already exists."
+                        }
                     } else {
-                        echo "Bucket ${bucketName} already exists. Skipping creation."
+                        def checkBucket = bat(script: "aws s3api head-bucket --bucket ${bucketName} 2>nul || echo NotFound", returnStdout: true).trim()
+                        if (checkBucket.contains("NotFound")) {
+                            bat """
+                            aws cloudformation deploy ^
+                                --stack-name ${stackName} ^
+                                --template-file ${templateFile} ^
+                                --capabilities CAPABILITY_NAMED_IAM ^
+                                --region ${region}
+                            """
+                        } else {
+                            echo "Bucket ${bucketName} already exists."
+                        }
                     }
                 }
             }
