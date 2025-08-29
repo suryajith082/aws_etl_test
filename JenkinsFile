@@ -5,10 +5,10 @@ pipeline {
         stage('Check or Create Bucket') {
             steps {
                 script {
-                    def bucketName = "dtcc_pov"
+                    def bucketName = "dtcc-pov"
                     def region = "us-east-1"   // change if needed
                     def stackName = "dtcc-pov-stack"
-                    def templateFile = "cloudformation\\s3-bucket.yml"
+                    def templateFile = "template.yml"
 
                     // Check if bucket exists (Windows uses bat instead of sh)
                     def checkBucket = bat(
