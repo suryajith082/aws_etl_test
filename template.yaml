@@ -1,11 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Create or use an existing S3 bucket
+Description: Create an S3 bucket
 
 Parameters:
   BucketName:
     Type: String
-    Description: Name of the S3 bucket to create
-    Default: dtcc-pov
+    Description: Name of the S3 bucket
 
 Resources:
   DtccPovBucket:
@@ -15,5 +14,5 @@ Resources:
 
 Outputs:
   BucketName:
-    Description: The S3 bucket name
+    Description: "The name of the S3 bucket"
     Value: !Ref DtccPovBucket

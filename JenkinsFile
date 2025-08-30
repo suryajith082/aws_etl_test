@@ -1,26 +1,35 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = 'us-east-1'
+        // Make sure you configure AWS credentials in Jenkins and reference the ID here
+        AWS_CREDENTIALS_ID = 'aws-dev-creds'
+    }
+
     stages {
         stage('Deploy Bucket with CloudFormation') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
-                    script {
-                        def bucketName = "dtcc-pov"   // could also be parameterized from Jenkins job
-                        def region = "us-east-1"
-                        def stackName = "dtcc-pov-stack"
-                        def templateFile = "template.yaml"
+                script {
+                    // Generate a unique bucket name using build number and timestamp
+                    def bucketName = "dtcc-pov"
+                    def stackName = "dtcc-pov-stack"
 
-                        // Deploy CloudFormation with parameters
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
+                                      credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
+
+                        // Deploy the CloudFormation stack
                         bat """
-                        aws cloudformation deploy ^
-                            --stack-name ${stackName} ^
-                            --template-file ${templateFile} ^
-                            --parameter-overrides BucketName=${bucketName} ^
-                            --capabilities CAPABILITY_NAMED_IAM ^
-                            --region ${region}
+aws cloudformation deploy ^
+    --stack-name ${stackName} ^
+    --template-file template.yaml ^
+    --parameter-overrides BucketName=${bucketName} ^
+    --capabilities CAPABILITY_NAMED_IAM ^
+    --region ${AWS_REGION}
                         """
                     }
+
+                    echo "Bucket created: ${bucketName}"
                 }
             }
         }
