@@ -2,31 +2,24 @@ pipeline {
     agent any
 
     stages {
-        stage('Check or Create Bucket') {
+        stage('Deploy Bucket with CloudFormation') {
             steps {
-                script {
-                    def bucketName = "dtcc-pov"
-                    def region = "us-east-1"   // change if needed
-                    def stackName = "dtcc-pov-stack"
-                    def templateFile = "template.yml"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']]) {
+                    script {
+                        def bucketName = "dtcc-pov"   // could also be parameterized from Jenkins job
+                        def region = "us-east-1"
+                        def stackName = "dtcc-pov-stack"
+                        def templateFile = "template.yml"
 
-                    // Check if bucket exists (Windows uses bat instead of sh)
-                    def checkBucket = bat(
-                        script: "aws s3api head-bucket --bucket ${bucketName} 2>nul || echo NotFound",
-                        returnStdout: true
-                    ).trim()
-
-                    if (checkBucket.contains("NotFound")) {
-                        echo "Bucket does not exist. Deploying CloudFormation stack..."
+                        // Deploy CloudFormation with parameters
                         bat """
                         aws cloudformation deploy ^
                             --stack-name ${stackName} ^
                             --template-file ${templateFile} ^
+                            --parameter-overrides BucketName=${bucketName} ^
                             --capabilities CAPABILITY_NAMED_IAM ^
                             --region ${region}
                         """
-                    } else {
-                        echo "Bucket ${bucketName} already exists. Skipping creation."
                     }
                 }
             }
