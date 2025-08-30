@@ -9,7 +9,7 @@ pipeline {
                         def bucketName = "dtcc-pov"   // could also be parameterized from Jenkins job
                         def region = "us-east-1"
                         def stackName = "dtcc-pov-stack"
-                        def templateFile = "template.yml"
+                        def templateFile = "template.yaml"
 
                         // Deploy CloudFormation with parameters
                         bat """
