@@ -12,8 +12,8 @@ pipeline {
             steps {
                 script {
                     // Generate a unique bucket name using build number and timestamp
-                    def bucketName = "dtcc-pov"
-                    def stackName = "dtcc-pov-stack"
+                    def bucketName = "test-bucket-suryajith"
+                    def stackName = "dtcc-suryajith-stack"
 
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
                                       credentialsId: "${AWS_CREDENTIALS_ID}"]]) {
